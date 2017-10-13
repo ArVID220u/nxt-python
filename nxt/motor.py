@@ -78,7 +78,7 @@ class TachoInfo:
     def __init__(self, values):
         self.tacho_count, self.block_tacho_count, self.rotation_count = values
     
-    def get_target(self, tacho_limit, direction):
+    def get_target(self, tacho_limit, direction=1):
         """Returns a TachoInfo object which corresponds to tacho state after
         moving for tacho_limit ticks. Direction can be 1 (add) or -1 (subtract)
         """
@@ -147,11 +147,10 @@ class BaseMotor(object):
         print("State: " + str(self._get_new_state()))
 
 
-    def set_target_encoder(self, target, power, brake=True, timeout=1, threshold=2, emulate=True):
+    def set_target_encoder(self, tacho_target, power, brake=True, timeout=1, threshold=2, emulate=True):
         # power between 1 and 127 
 
 
-        tacho_limit = target
 
         tacho = self.get_tacho()
         state = self._get_new_state()
@@ -172,7 +171,6 @@ class BaseMotor(object):
        
         self._debug_out('tachocount: ' + str(tacho))
         current_time = time.time()
-        tacho_target = tacho.new_target(tacho_limit)
         
         blocked = False
         try:
