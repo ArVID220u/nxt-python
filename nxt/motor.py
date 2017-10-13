@@ -139,6 +139,10 @@ class BaseMotor(object):
         if self.debug:
             print(message)
 
+    def debug_info():
+        print("Tacho: " + str(self.get_tacho()))
+        print("State: " + str(self._get_new_state()))
+
     def turn(self, power, tacho_units, brake=True, timeout=1, emulate=True):
         """Use this to turn a motor. The motor will not stop until it turns the
         desired distance. Accuracy is much better over a USB connection than
