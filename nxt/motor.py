@@ -139,7 +139,7 @@ class BaseMotor(object):
         if self.debug:
             print(message)
 
-    def debug_info():
+    def debug_info(self):
         print("Tacho: " + str(self.get_tacho()))
         print("State: " + str(self._get_new_state()))
 
