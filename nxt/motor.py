@@ -87,6 +87,9 @@ class TachoInfo:
             raise ValueError('Invalid direction')
         new_tacho = self.tacho_count + direction * tacho_limit
         return TachoInfo([new_tacho, None, None])
+
+    def new_target(self, target):
+        return TachoInfo([target, None, None])
     
     def is_greater(self, target, direction):
         return direction * (self.tacho_count - target.tacho_count) > 0
@@ -142,6 +145,71 @@ class BaseMotor(object):
     def debug_info(self):
         print("Tacho: " + str(self.get_tacho()))
         print("State: " + str(self._get_new_state()))
+
+
+    def set_target_encoder(self, target, power, brake=True, timeout=1, threshold=2, emulate=True):
+        # power between 1 and 127 
+
+
+        tacho_limit = target
+
+        tacho = self.get_tacho()
+        state = self._get_new_state()
+
+        direction = 1 
+        if target - tacho < 0:
+            direction = -1
+
+        power = abs(power)
+
+        # Update modifiers even if they aren't used, might have been changed
+        state.power = direction * power
+        if not emulate:
+            state.tacho_limit = tacho_limit
+
+        self._debug_out('Updating motor information...')
+        self._set_state(state)
+       
+        self._debug_out('tachocount: ' + str(tacho))
+        current_time = time.time()
+        tacho_target = tacho.new_target(tacho_limit)
+        
+        blocked = False
+        try:
+            while True:
+                time.sleep(self._eta(tacho, tacho_target, power) / 2)
+                
+                if not blocked: # if still blocked, don't reset the counter
+                    last_tacho = tacho
+                    last_time = current_time
+                
+                tacho = self.get_tacho()
+                current_time = time.time()
+                blocked = self._is_blocked(tacho, last_tacho, direction)
+                if blocked:
+                    self._debug_out(('not advancing', last_tacho, tacho))
+                    # the motor can be up to 80+ degrees in either direction from target when using bluetooth
+                    if current_time - last_time > timeout:
+                        if tacho.is_near(tacho_target, threshold):
+                            break
+                        else:
+                            raise BlockedException("Blocked!")
+                else:
+                    self._debug_out(('advancing', last_tacho, tacho))
+                if tacho.is_near(tacho_target, threshold) or tacho.is_greater(tacho_target, direction):
+                    break
+
+            # recurse for precision
+            if power > 10:
+                set_target_encoder(motor, target, power//2, brake, timeout, threshold, emulate)
+        finally:
+            if brake:
+                self.brake()
+            else:
+                self.idle()
+
+
+
 
     def turn(self, power, tacho_units, brake=True, timeout=1, emulate=True):
         """Use this to turn a motor. The motor will not stop until it turns the
