@@ -156,7 +156,7 @@ class BaseMotor(object):
         state = self._get_new_state()
 
         direction = 1 
-        if target - tacho < 0:
+        if tacho.is_greater(tacho_target, direction):
             direction = -1
 
         power = abs(power)
@@ -199,7 +199,7 @@ class BaseMotor(object):
 
             # recurse for precision
             if power > 10:
-                set_target_encoder(motor, target, power//2, brake, timeout, threshold, emulate)
+                set_target_encoder(target, power//2, brake, timeout, threshold, emulate)
         finally:
             if brake:
                 self.brake()
