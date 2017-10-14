@@ -90,6 +90,12 @@ class TachoInfo:
 
     def new_target(self, target):
         return TachoInfo([target, None, None])
+
+    def add(self, diff):
+        self.tacho_count += diff
+
+    def plus(self, diff):
+        return TachoInfo([self.tacho_count + diff, self.block_tacho_count, self.rotation_count])
     
     def is_greater(self, target, direction):
         return direction * (self.tacho_count - target.tacho_count) > 0
@@ -137,7 +143,7 @@ def get_tacho_and_state(values):
 
 class BaseMotor(object):
     """Base class for motors"""
-    debug = 0
+    debug = 1
     def _debug_out(self, message):
         if self.debug:
             print(message)
@@ -147,7 +153,7 @@ class BaseMotor(object):
         print("State: " + str(self._get_new_state()))
 
 
-    def set_target_encoder(self, tacho_target, power, brake=True, timeout=1, threshold=2, emulate=True):
+    def set_target_encoder(self, tacho_target, power, brake=True, timeout=1, threshold=2, emulate=True, first=True, recurse=True):
         # power between 1 and 127 
 
 
@@ -155,9 +161,12 @@ class BaseMotor(object):
         tacho = self.get_tacho()
         state = self._get_new_state()
 
+
         direction = 1 
         if tacho.is_greater(tacho_target, direction):
             direction = -1
+
+        tacho_target.add(-direction*1)
 
         power = abs(power)
 
@@ -191,20 +200,25 @@ class BaseMotor(object):
                         if tacho.is_near(tacho_target, threshold):
                             break
                         else:
+                            brake=False
                             raise BlockedException("Blocked!")
                 else:
-                    self._debug_out(('advancing', last_tacho, tacho))
+                    self._debug_out(('advancing', str(last_tacho), str(tacho)))
                 if tacho.is_near(tacho_target, threshold) or tacho.is_greater(tacho_target, direction):
                     break
 
             # recurse for precision
-            if power > 10:
-                set_target_encoder(target, power//2, brake, timeout, threshold, emulate)
+            if power > 50 and recurse:
+                self.brake()
+                time.sleep(0.5)
+                self.set_target_encoder(tacho_target, round(power / 1.5), brake, timeout, threshold, emulate, first=False)
         finally:
             if brake:
                 self.brake()
             else:
                 self.idle()
+            if first:
+                time.sleep(0.5)
 
 
 
