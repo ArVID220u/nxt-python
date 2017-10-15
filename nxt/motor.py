@@ -208,10 +208,14 @@ class BaseMotor(object):
                     break
 
             # recurse for precision
-            if power > 50 and recurse:
+            if power > 30 and recurse:
                 self.brake()
                 time.sleep(0.5)
-                self.set_target_encoder(tacho_target, round(power / 1.5), brake, timeout, threshold, emulate, first=False)
+                tacho = self.get_tacho()
+                if tacho.is_near(tacho_target, threshold):
+                    pass
+                else:
+                    self.set_target_encoder(tacho_target, round(power / 1.5), brake, timeout, threshold, emulate, first=False)
         finally:
             if brake:
                 self.brake()
