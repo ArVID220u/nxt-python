@@ -136,7 +136,7 @@ bundled with this version of nxt-python).'''
             self.brick.stop_program()
         except nxt.error.DirProtError:
             pass
-        self.brick.start_program('MotorControl%d.rxe' % version)
+        self.brick.start_program(('MotorControl%d.rxe' % version).encode("windows-1252"))
         time.sleep(0.1)
     
     def stop(self):
